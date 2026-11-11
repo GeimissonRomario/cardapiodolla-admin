@@ -2,6 +2,10 @@
 //  ADMIN — Cardápio Dolla
 // ================================================================
 
+function esc(s) {
+    return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
 // --- Definição das abas ---
 const CATEGORIAS = [
     { id: 'pastel_tradicional', label: '🥟 Pastéis Trad.' },
@@ -138,16 +142,19 @@ function renderizarLista(lista) {
         li.innerHTML = `
             <span class="prod-status">${p.ativo ? '🟢' : '🔴'}</span>
             <div class="prod-info">
-                <div class="prod-nome" title="${p.nome}">${p.nome}</div>
+                <div class="prod-nome"></div>
                 ${precoStr ? `<div class="prod-preco">${precoStr}</div>` : ''}
             </div>
             <div class="prod-acoes">
-                <button class="btn-toggle-${p.ativo ? 'on' : 'off'}" data-id="${p.id}">
+                <button class="btn-toggle-${p.ativo ? 'on' : 'off'}">
                     ${p.ativo ? 'Desativar' : 'Ativar'}
                 </button>
-                <button class="btn-editar" data-id="${p.id}">✏️</button>
-                <button class="btn-remover" data-id="${p.id}" title="Remover">🗑️</button>
+                <button class="btn-editar">✏️</button>
+                <button class="btn-remover" title="Remover">🗑️</button>
             </div>`;
+        const nomeEl = li.querySelector('.prod-nome');
+        nomeEl.textContent = p.nome;
+        nomeEl.title = p.nome;
 
         li.querySelector('.btn-toggle-' + (p.ativo ? 'on' : 'off')).onclick = () =>
             toggleProduto(p.id, !p.ativo);
@@ -164,14 +171,14 @@ function renderizarLista(lista) {
 async function toggleProduto(id, novoEstado) {
     try {
         await db.collection('menu').doc(id).update({ ativo: novoEstado });
-    } catch (e) { alert('Erro: ' + e.message); }
+    } catch { alert('Não foi possível atualizar o produto. Tente novamente.'); }
 }
 
 async function confirmarRemover(prod) {
     if (!confirm(`Remover "${prod.nome}"?\nEsta ação não pode ser desfeita.`)) return;
     try {
         await db.collection('menu').doc(prod.id).delete();
-    } catch (e) { alert('Erro: ' + e.message); }
+    } catch { alert('Não foi possível remover o produto. Tente novamente.'); }
 }
 
 // ================================================================
@@ -239,8 +246,8 @@ async function salvarModal() {
             await db.collection('menu').doc(modalProdId).update(dados);
         }
         fecharModal();
-    } catch (e) {
-        alert('Erro ao salvar: ' + e.message);
+    } catch {
+        alert('Não foi possível salvar o produto. Tente novamente.');
     } finally {
         btn.disabled = false;
         btn.textContent = 'Salvar';
@@ -312,8 +319,8 @@ async function salvarConfig() {
         await db.collection('menu_config').doc('precos').set(dados, { merge: true });
         btn.textContent = '✅ Salvo!';
         setTimeout(() => { btn.textContent = '💾 Salvar configurações'; btn.disabled = false; }, 2000);
-    } catch (e) {
-        alert('Erro: ' + e.message);
+    } catch {
+        alert('Não foi possível salvar as configurações. Tente novamente.');
         btn.disabled = false;
         btn.textContent = '💾 Salvar configurações';
     }
@@ -451,8 +458,8 @@ async function seedProdutos() {
         }
 
         alert(`✅ ${novos.length} produto(s) importado(s) com sucesso!`);
-    } catch (e) {
-        alert('Erro na importação: ' + e.message);
+    } catch {
+        alert('Erro na importação. Verifique sua conexão e tente novamente.');
     } finally {
         btn.disabled = false;
         btn.textContent = '📦 Importar cardápio padrão (1ª vez)';
